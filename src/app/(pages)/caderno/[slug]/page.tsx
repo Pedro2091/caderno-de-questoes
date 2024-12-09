@@ -8,7 +8,7 @@ import Logo from "@public/images/logo.png";
 import EditSVG from "@public/icons/edit.svg";
 import ArrowLeftSVG from "@public/icons/arrow-left.svg";
 import ArrowRightSVG from "@public/icons/arrow-right.svg";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import FinishModal from "@/app/components/FinishModal";
 import Timer from "@/app/components/Utils/Timer";
 import api from "@/services/api";
@@ -43,21 +43,21 @@ export default function QuestionPage() {
         [k: number]: boolean;
     }>({});
 
-    const totalSteps = () => {
+    const totalSteps = useCallback(() => {
         return steps.length;
-    };
+    }, [steps.length]);
 
-    const completedSteps = () => {
+    const completedSteps =  useCallback(() => {
         return Object.keys(completed).length;
-    };
+    }, [completed]);
 
     const isLastStep = () => {
         return activeStep === totalSteps() - 1;
     };
 
-    const allStepsCompleted = () => {
+    const allStepsCompleted = useCallback(() => {
         return completedSteps() === totalSteps();
-    };
+    }, [completedSteps, totalSteps]);
 
     const handleNext = () => {
         const newActiveStep =
@@ -97,7 +97,7 @@ export default function QuestionPage() {
                 setIsLoading(false)
             })
         }
-    }, [allStepsCompleted, searchParams])
+    }, [allStepsCompleted, searchParams, timeTotal])
 
     return (
         <>

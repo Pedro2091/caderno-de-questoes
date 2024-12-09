@@ -10,7 +10,7 @@ interface TabPanelProps {
 export default function TabPanel({ children, value, index, id, ...other }: TabPanelProps) {
     return (
         <div
-            role="Painel de Abas"
+            role="tabpanel"
             hidden={value !== index}
             id={id}
             {...other}

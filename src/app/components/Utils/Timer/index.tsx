@@ -2,9 +2,7 @@
 
 import { Stack, Typography } from "@mui/material";
 import ClockSVG from "@public/icons/clock.svg";
-
-import { useState, useEffect, useMemo, useCallback } from "react";
-
+import { useState, useEffect, useMemo } from "react";
 interface TimerProps {
     setTimeTotal: (time: number) => void;
     stop: boolean;
@@ -44,7 +42,7 @@ export default function Timer({ setTimeTotal, stop }: TimerProps) {
         }, 1000);
 
         return () => clearInterval(intervalId);
-    }, [time]);
+    }, [time, stop]);
 
 
     useEffect(() => {
