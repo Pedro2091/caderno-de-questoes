@@ -4,7 +4,7 @@
 
 This is a web application that lists question books for tests.
 
-![Demo Image](./public/demo.png)
+![Demo Image](./src/public/demo.png)
 
 
 ## Technologies
@@ -28,7 +28,7 @@ git clone https://github.com/Pedro2091/caderno-de-questoes
 npm install
 ```
 
-## How to run the Aplication in development
+## How to run the Aplication in development (Don't forget to run API)
 
 1. Run the server in the folder terminal
 ```bash
