@@ -4,14 +4,13 @@ import EditSVG from "@public/icons/edit.svg";
 import Button from "../Utils/Button";
 import Link from "next/link";
 import TagAnswered from "./TagAnswered";
+import { QuestionBook } from "@/models/QuestionBook";
 
-interface QuestionsBookCardProps extends CardProps {
+interface QuestionBookCardProps extends CardProps {
     title: string,
     answered: boolean, 
     questionsQuantity: number;
-    // TODO type of questionsBooks
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    questionsBook: any;
+    questionBook: QuestionBook;
 }
 
 const CardStyled = styled(Card)<CardProps>(() => ({
@@ -24,7 +23,7 @@ const CardStyled = styled(Card)<CardProps>(() => ({
     borderRadius: "20px",
 }));
 
-export default function QuestionsBookCard({ title, answered, questionsQuantity, questionsBook }: QuestionsBookCardProps) {
+export default function QuestionBookCard({ title, answered, questionsQuantity, questionBook }: QuestionBookCardProps) {
     return (
         <CardStyled variant="outlined">
             <CardContent sx={{p: "0" }}>
@@ -49,7 +48,7 @@ export default function QuestionsBookCard({ title, answered, questionsQuantity, 
                 </Stack>
             </CardContent>
             <CardActions sx={{ p: "0", pointerEvents: answered ? "none" : "auto"}}>
-                <Link href={`/caderno/${questionsBook.slug}`} >
+                <Link href={{ pathname: `/caderno/${questionBook.slug}`, query: { id: questionBook.id }}}>
                     <Button disabled={answered}>
                         Responder
                     </Button>

@@ -1,14 +1,14 @@
 'use client'
 
-import { Box, Typography, TextField as MuiTextField } from "@mui/material";
+import { Box, Typography, TextField as MuiTextField, TextFieldProps as MuiTextFieldProps } from "@mui/material";
 import { useState } from "react";
 
-interface ButtonProps {
+type TextFieldProps = MuiTextFieldProps & {
     label: string;
     characterlimit?: number;
 }
 
-export default function TextField({ label, characterlimit, ...rest }: ButtonProps) {
+export default function TextField({ label, characterlimit, ...rest }: TextFieldProps) {
     const [values, setValues] = useState({ name: "" });
 
     const handleChange = (name: string) => {
@@ -30,6 +30,7 @@ export default function TextField({ label, characterlimit, ...rest }: ButtonProp
                 value={values.name}
                 onChange={handleChange("name")}
                 {...rest}
+                
                 sx={{
                     width: "100%",
                     backgroundColor: "gray.light",

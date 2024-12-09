@@ -8,34 +8,37 @@ import Logo from "@public/images/logo.png";
 import EditSVG from "@public/icons/edit.svg";
 import ArrowLeftSVG from "@public/icons/arrow-left.svg";
 import ArrowRightSVG from "@public/icons/arrow-right.svg";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import FinishModal from "@/app/components/FinishModal";
 import Timer from "@/app/components/Utils/Timer";
+import api from "@/services/api";
+import { QuestionBook } from "@/models/QuestionBook";
+import { useSearchParams } from "next/navigation";
 
 export default function QuestionPage() {
-    // em caso de uso de API
-    // o correto seria usar os dados vindos pelo slug/link para buscar as informações
-    // porém preferi o uso de dados mockados para focar nos requisitos pedidos
-    const title = "Titulo teste da prova";
+    const [questionBook, setQuestionBook] = useState<QuestionBook>({} as QuestionBook);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [timeTotal, setTimeTotal] = useState<number>(0);
+    const [stopTimer, setStopTimer] = useState<boolean>(false);
 
-    const questions = [
-        {
-            title: "1-Titulo da Pergunta",
-            description: "1- Vorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vulputate libero et velit interdum, ac aliquet odio mattis. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos."
-        },
-        {
-            title: "2- Titulo da Pergunta",
-            description: "2- Vorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vulputate libero et velit interdum, ac aliquet odio mattis. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos."
-        },
-        {
-            title: "3- Titulo da Pergunta",
-            description: "3- Vorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vulputate libero et velit interdum, ac aliquet odio mattis. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos."
-        },
-    ]
+    const searchParams = useSearchParams()
+    
+    const inputRefs = useRef<HTMLInputElement[]>([]);
 
-    const steps = questions;
+    useEffect(() => {
+        api.get(`/questionBooks/${searchParams.get('id')}?_embed=questions`)
+            .then(response => {
+                setQuestionBook(response.data)
+                setIsLoading(false)
+            }).catch(error => {
+                console.error(error)
+                setIsLoading(false)
+            })
+    }, [searchParams])
 
-    const [activeStep, setActiveStep] = useState(0);
+    const steps = questionBook.questions || 0
+
+    const [activeStep, setActiveStep] = useState<number>(0);
     const [completed, setCompleted] = useState<{
         [k: number]: boolean;
     }>({});
@@ -59,7 +62,7 @@ export default function QuestionPage() {
     const handleNext = () => {
         const newActiveStep =
             isLastStep() && !allStepsCompleted()
-                ?steps.findIndex((step, i) => !(i in completed))
+                ? steps.findIndex((step, i) => !(i in completed))
                 : activeStep + 1;
         setActiveStep(newActiveStep);
     };
@@ -68,8 +71,13 @@ export default function QuestionPage() {
         setActiveStep((prevActiveStep) => prevActiveStep - 1);
     };
 
-    const handleComplete = () => {
-        // ENVIAR RESPOSTA PARA O BACKEND
+    const handleComplete = (id: number | undefined) => {
+        api.patch(`/questions/${id}`,
+            { "answer": inputRefs?.current[activeStep]?.value },
+        ).catch(error => {
+            console.error(error)
+            setIsLoading(false)
+        })
 
         setCompleted({
             ...completed,
@@ -78,6 +86,18 @@ export default function QuestionPage() {
         handleNext();
     };
 
+    useEffect(() => {
+        if (allStepsCompleted()) {
+            setStopTimer(true)
+
+            api.patch(`/questionBooks/${searchParams.get('id')}`,
+                { "timeTotal": timeTotal, "finished": true },
+            ).catch(error => {
+                console.error(error)
+                setIsLoading(false)
+            })
+        }
+    }, [allStepsCompleted, searchParams])
 
     return (
         <>
@@ -100,105 +120,122 @@ export default function QuestionPage() {
                 </Container>
             </header>
             <main>
-                <Container
-                    sx={{
-                        py: "30px",
-                        position: "relative",
-                        borderBottom: 1,
-                        borderColor: "divider"
-                    }}
-                >
-                    <Stack spacing={{ xs: "32px", sm: "4px" }} alignItems="center">
-                        <Timer time={25}/>
-                        <Stack
-                            direction="row"
-                            spacing={2}
-                            justifyContent="center"
-                            alignItems="center"
+                {questionBook && !isLoading
+                    ? <>
+                        <Container
+                            sx={{
+                                py: "30px",
+                                position: "relative",
+                                borderBottom: 1,
+                                borderColor: "divider"
+                            }}
                         >
-                            <EditSVG/>
-        
-                            <Typography variant="body1" component="h1" fontWeight="bold" textAlign="center">
-                                {title}
-                            </Typography>
-                        </Stack>
-                    </Stack>
+                            <Stack spacing={{ xs: "32px", sm: "4px" }} alignItems="center">
+                                <Timer setTimeTotal={setTimeTotal} stop={stopTimer}/>
+                                <Stack
+                                    direction="row"
+                                    spacing={2}
+                                    justifyContent="center"
+                                    alignItems="center"
+                                >
+                                    <EditSVG />
 
-                    <Stack spacing={2} marginTop={{ xs: "40px", sm: "72px" }}>
-                        <Typography
-                            variant="body1"
-                            component="h2"
-                            color="gray"
-                            fontWeight="bold"
-                            textTransform="uppercase"
-                        >
-                            {questions[activeStep].title} {activeStep + 1}/{steps.length}
-                        </Typography>
+                                    <Typography variant="body1" component="h1" fontWeight="bold" textAlign="center">
+                                        {questionBook.title}
+                                    </Typography>
+                                </Stack>
+                            </Stack>
 
-                        <Typography variant="body1" component="article">
-                            {questions[activeStep].description}
-                        </Typography>
-                    </Stack>
+                            <Stack spacing={2} marginTop={{ xs: "40px", sm: "72px" }}>
+                                <Typography
+                                    variant="body1"
+                                    component="h2"
+                                    color="gray"
+                                    fontWeight="bold"
+                                    textTransform="uppercase"
+                                >
+                                    {questionBook?.questions?.at(activeStep)?.title} {activeStep + 1}/{steps.length}
+                                </Typography>
 
-                    <Box marginTop="26px">
-                        <TextField label={"Escreva sua resposta aqui"} characterlimit={300} />
-                    </Box>
+                                <Typography variant="body1" component="article">
+                                    {questionBook?.questions?.at(activeStep)?.description}
+                                </Typography>
+                            </Stack>
+                           
+                            {questionBook?.questions?.map((question, index) => (
+                                <Box key={index} marginTop="26px" display={activeStep === index ? "block" : "none"}>
+                                    <TextField
+                                        inputRef={(ref:HTMLInputElement) => { inputRefs.current[index] = ref }}
+                                        label={`Escreva sua resposta aqui`}
+                                        characterlimit={300}
+                                        disabled={completed[activeStep]}
+                                    />
+                                </Box>
+                            ))}
 
-                    <Box width="200px" marginTop="40px">
-                        <Button
-                            onClick={handleComplete}
-                            disabled={completed[activeStep]}
-                        >
-                            {completed[activeStep]
-                                ? 'Resposta enviada'
-                                : completedSteps() === totalSteps() - 1
-                                    ? 'Finalizar'
-                                    : 'Enviar resposta'
-                            }
-                        </Button>
-                    </Box>
- 
-                </Container>
-                <Container>
-                    <Stack
-                        direction="row"
-                        justifyContent={activeStep === 0 ? "flex-end" : "space-between"}
-                        py="26px"
+                            <Box width="200px" marginTop="40px">
+                                <Button
+                                    onClick={() => {handleComplete(questionBook?.questions?.at(activeStep)?.id)}}
+                                    disabled={completed[activeStep]}
+                                >
+                                    {completed[activeStep]
+                                        ? 'Resposta enviada'
+                                        : completedSteps() === totalSteps() - 1
+                                            ? 'Finalizar'
+                                            : 'Enviar resposta'
+                                    }
+                                </Button>
+                            </Box>
+                             
+                        </Container>
+                        <Container>
+                            <Stack
+                                direction="row"
+                                justifyContent={activeStep === 0 ? "flex-end" : "space-between"}
+                                py="26px"
 
-                        sx={{
-                            "& .MuiButton-root": {
-                                color: "gray.main",
-                                textTransform: "capitalize",
-                                fontSize: "14px",
-                            }
-                        }}
-                    >
-                        {!(activeStep === 0) &&
-                            <MUIButton
-                                color="inherit"
-                                onClick={handleBack}
-                                startIcon={
-                                    <ArrowLeftSVG/>
-                                }
+                                sx={{
+                                    "& .MuiButton-root": {
+                                        color: "gray.main",
+                                        textTransform: "capitalize",
+                                        fontSize: "14px",
+                                    }
+                                }}
                             >
-                                Anterior
-                            </MUIButton>
-                        }
-
-                        {!(activeStep + 1 === steps.length) &&
-                            <MUIButton
-                                onClick={handleNext}
-                                endIcon={
-                                    <ArrowRightSVG/>
+                                {!(activeStep === 0) &&
+                                    <MUIButton
+                                        color="inherit"
+                                        onClick={handleBack}
+                                        startIcon={
+                                            <ArrowLeftSVG />
+                                        }
+                                    >
+                                        Anterior
+                                    </MUIButton>
                                 }
-                            >
-                                Próximo
-                            </MUIButton>
-                        }
-                    </Stack>
-                </Container>
 
-                {allStepsCompleted() && <FinishModal time="00:25:00"/>}
+                                {!(activeStep + 1 === steps.length) &&
+                                    <MUIButton
+                                        onClick={handleNext}
+                                        endIcon={
+                                            <ArrowRightSVG />
+                                        }
+                                    >
+                                        Próximo
+                                    </MUIButton>
+                                }
+                            </Stack>
+                        </Container>
+
+                        {allStepsCompleted() && <FinishModal time={timeTotal} />}
+                    </>
+                    :
+                    <Stack alignItems="center" py="20px">
+                        <Typography variant="body1" component="span">
+                            Carregando...
+                        </Typography>
+                    </Stack>
+                }
             </main>
         </>
     );

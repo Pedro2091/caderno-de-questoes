@@ -6,26 +6,22 @@ import ClockSVG from "@public/icons/clock.svg";
 import { useState, useEffect, useMemo, useCallback } from "react";
 
 interface TimerProps {
-    time: number;
+    setTimeTotal: (time: number) => void;
+    stop: boolean;
 }
 
-export default function Timer({ time }: TimerProps) {
+export default function Timer({ setTimeTotal, stop }: TimerProps) {
     const [timeCount, setTimeCount] = useState<string>();
-    const [startDateMs, setStartDateMs] = useState<number | null>(null);
-    const [endDateMs, setEndDateMs] = useState<number | null>(null);
+    const [time, setTime] = useState<number>(1);
 
     const timerText = useMemo<string>(() => {
         const defaults = "00:00:00";
 
-        if (!startDateMs || !endDateMs) return defaults;
+        if (!time) return defaults;
 
-        const total = endDateMs - startDateMs;
-
-        if (total <= 0) return defaults;
-
-        const seconds = Math.floor((total / 1000) % 60);
-        const minutes = Math.floor((total / 1000 / 60) % 60);
-        const hours = Math.floor((total / 1000 / 60 / 60) % 24);
+        const seconds = Math.floor((time / 1000) % 60);
+        const minutes = Math.floor((time / 1000 / 60) % 60);
+        const hours = Math.floor((time / 1000 / 60 / 60) % 24);
 
         return (
             (hours > 9 ? hours : "0" + hours) +
@@ -34,44 +30,28 @@ export default function Timer({ time }: TimerProps) {
             ":" +
             (seconds > 9 ? seconds : "0" + seconds)
         );
-    }, [startDateMs, endDateMs]);
-
-    const start = useCallback(() => {
-        const now = Date.now();
-        setStartDateMs(now);
-        setEndDateMs(now + time * 1000 * 60); 
-    }, []);
+    }, [time]);
 
     useEffect(() => {
-        if (!startDateMs || !endDateMs || endDateMs - startDateMs <= 0) {
+        if (stop) {
             return;
         }
         const intervalId = setInterval(() => {
-            setEndDateMs((prev) => {
+            setTime((prev) => {
                 if (!prev) return prev;
-                return prev - 1000;
+                return prev + 1000;
             });
         }, 1000);
 
         return () => clearInterval(intervalId);
-    }, [startDateMs, endDateMs]);
+    }, [time]);
 
-    useEffect(() => {
-        if (!endDateMs || !startDateMs) return;
-
-        if (endDateMs - startDateMs <= 0) {
-            setStartDateMs(null);
-            setEndDateMs(null);
-        }
-    }, [endDateMs, startDateMs]);
 
     useEffect(() => {
         setTimeCount(timerText);
-    }, [timerText, setTimeCount]);
+        setTimeTotal(time);
+    }, [timerText, setTimeCount, time, setTimeTotal]);
 
-    useEffect(() => {
-        start();
-    }, []);
 
     return (
         <Stack

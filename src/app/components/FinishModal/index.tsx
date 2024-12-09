@@ -4,9 +4,10 @@ import ClockSVG from "@public/icons/clock.svg";
 import Image from "next/image";
 import Button from "../Utils/Button";
 import Link from "next/link";
+import timerText from "@/utils/timerText";
 
 interface FinishScreenProps {
-  time: string;
+  time: number;
 }
 
 export default function FinishModal({ time }: FinishScreenProps) {
@@ -74,7 +75,7 @@ export default function FinishModal({ time }: FinishScreenProps) {
               >
                 <ClockSVG/>
                 <Typography variant="body1" component="h2">
-                  {time} de prova
+                {timerText(time)} de prova
                 </Typography>
               </Stack>
               <Link href="/">
